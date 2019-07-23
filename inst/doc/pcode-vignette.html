@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Haixu Wang, Jiguo Cao" />
+
+<meta name="date" content="2019-07-12" />
+
+<title>Parameter cascade method for ODE models with pCODE</title>
+
+
+
+
+
+
+
+
+
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(title);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#header {
+text-align: center;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Parameter cascade method for ODE models with <strong>pCODE</strong></h1>
+<h4 class="author">Haixu Wang, Jiguo Cao</h4>
+<h4 class="date">July 12, 2019</h4>
+
+
+
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1">knitr<span class="op">::</span>opts_chunk<span class="op">$</span><span class="kw">set</span>(</a>
+<a class="sourceLine" id="cb1-2" title="2">  <span class="dt">collapse =</span> <span class="ot">TRUE</span>,</a>
+<a class="sourceLine" id="cb1-3" title="3">  <span class="dt">comment =</span> <span class="st">&quot;#&gt;&quot;</span></a>
+<a class="sourceLine" id="cb1-4" title="4">)</a></code></pre></div>
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+Evolution of a dynamic system in time can be represented by ordinary differential equations (ODE) models consisting a set of state variables and their derivatives. For example, the state variables can be the population of different species in an ecological system, the velocities and locations of particles in a physics system, the concentration of chemicals in a reactor, or the energy of objects in a heating process. Usually, an ODE model is defned as a set of differential equations in the following form <span class="math display">\[
+\dot{\mathbf{x}}(t) = \mathbf{f}(\mathbf{x},\mathbf{u},t|\mathbf{\theta})
+\label{eq:generalode}
+\]</span> where <span class="math inline">\(\mathbf{x}(t)\)</span> denotes the fully or partially observed states of the system at time <span class="math inline">\(t\)</span>. The ODE model links the first derivative, the temporal change, of the states with <span class="math inline">\(\mathbf{x}\)</span> itself and other influention components <span class="math inline">\(\mathbf{u}\)</span> through some function <span class="math inline">\(\mathbf{f}\)</span> defined by the parameter vector <span class="math inline">\(\mathbf{\theta}\)</span>.
+
+<p>First, each of <span class="math inline">\(x_{i}(t)\)</span> is expressed as a linear combination of basis functions <span class="math display">\[\begin{equation}
+     x_{i}(t) = \sum_{i}^{K_{i}} c_{ik} \phi_{ik}(t) = \mathbf{c}^{\prime}_{i}\mathbf{\phi}_{i}(t)
+\end{equation}\]</span> given <span class="math inline">\(K_{i}\)</span>, the number of basis funtions, and <span class="math inline">\(\mathbf{\phi}_{i}(t)\)</span>, the vector of basis functions evaluated at a time point t. Normally, the optimal <span class="math inline">\(K_{i}\)</span> is obtained through a tuning process. Larger <span class="math inline">\(K_{i}\)</span> leads to overfitting and wiggly estimates of ODE solutions, and insufficient basis functions cannot provide a satisfactory interpolation to capture the variation in both <span class="math inline">\(x_{i}(t)\)</span> and its derivative. For that matter, penalzation approach remedies the situation by imposing a smoothness constraint during the optimzation step for obtaining basis coefficients. Hence, a saturated number of basis functions can be selected without the consequence of overfitting the observations and left to be a subjective matter. As a result, <span class="math inline">\(x_{i}(t)\)</span> is determined by its basis coefficients <span class="math inline">\(\mathbf{c}_{i}\)</span>, and initial values are immediately available upon the estiamtion result of <span class="math inline">\(\mathbf{c}_{i}\)</span>.</p>
+<p>Let <span class="math inline">\(y_{ij}\)</span> be the j-th observation of i-th state variable of the system, where <span class="math inline">\(j = 1, ..., n_{i}\)</span> and <span class="math inline">\(i = 1,..., D\)</span>. The smoothing method for obtaining <span class="math inline">\(\hat{\mathbf{c}_{i}}\)</span> with <span class="math inline">\(\hat{x}_{i}(t)\)</span> relies on the random errors defined as <span class="math display">\[\begin{equation*}
+  e_{ij} = y_{ij} - x_{ij}
+\end{equation*}\]</span> Assume <span class="math inline">\(\mathbf{e}_{i} = (e_{i1},...,e_{in_{i}})\)</span> has a distribution function denoted as <span class="math display">\[\begin{equation*}
+  g(\mathbf{e}_{i}|\mathbf{\sigma}_{i})
+\end{equation*}\]</span> where <span class="math inline">\(\mathbf{\sigma}_{i}\)</span> represents the distribution parameters. As a start for establishing the optimization procedure, a simple objective funtion <span class="math inline">\(J(\mathbf{c}_{i}|\mathbf{\sigma}_{i})\)</span> is considered per the smoothing spline routine. That is, the negative log-likelihood funtion is chosen for non-normal errors, whereas the least square criterion is naturally suitable for i.i.d. normal error <span class="math inline">\(e_{ij} \sim \text{N}(0,\sigma_{i})\)</span>. The summation of individual fitting criterion <span class="math inline">\(J(\mathbf{c}_{i}|\mathbf{\sigma}_{i})\)</span> over all defines a composite objective function for all dimensions. As forementioned, a saturated number of basis functions will be used which requires a penalty term in the objective function to prevent overfitting problems.  suggests to use a linear differential operator for defining a roughness penalty and introuduce it to the fitting criterion. Later,  utilizes the roughness penalty in estimating parameters and solutions of ODE models. Following the same technique, the penalty term is defined based on the discrepancy between the derivative and the ODE model, i.e., <span class="math display">\[\begin{equation}
+       \int (\dot{x}_{i}(t) - f(\mathbf{x},t|\mathbf{\theta}))^{2}dt
+ \end{equation}\]</span> for each variable <span class="math inline">\(x_{i}\)</span>. Multiplying the penalty with a smoothing parameter <span class="math inline">\(\lambda_{i}\)</span> and combining the summation of individual penalty, the complete objective function is defined to be <span class="math display">\[\begin{equation}
+  J(\mathbf{c}|\mathbf{\theta},\mathbf{\sigma}_{i},\mathbf{\lambda}) = \sum_{i=1}^{D} \big[ g(\mathbf{e}_{i}|\mathbf{\sigma}_{i}) + \lambda_{i}\int (\dot{x}_{i}(t) - f(\mathbf{x},t|\mathbf{\theta}))^{2}dt\big]
+  \label{eq:innerobj}
+ \end{equation}\]</span> where conditioning on <span class="math inline">\(\mathbf{\theta}\)</span> and <span class="math inline">\(\mathbf{\lambda}\)</span> is introduced. Additionally, the basis coefficients <span class="math inline">\(\mathbf{c}\)</span> become an implicit functions of the ODE parameters <span class="math inline">\(\mathbf{\theta}\)</span> as <span class="math inline">\(\mathbf{c}(\mathbf{\theta},\mathbf{\sigma};\mathbf{\lambda})\)</span>. <span class="math inline">\(\mathbf{\lambda}\)</span> are treated as tuning parameters rather then model parameters as illustated in the difference of conditioning. Objective function~ needs to be updated in order to estiamte <span class="math inline">\(\mathbf{c}\)</span> given changes in <span class="math inline">\(\mathbf{\theta}\)</span>. To clearly distinguish two sets of parameters <span class="math inline">\(\mathbf{c}\)</span> and <span class="math inline">\(\mathbf{\theta}\)</span>, <span class="math inline">\(\mathbf{c}\)</span> will be referred to as the nuisance parameters since they are not essential for estimating the ODE model rather to interpolates the observations. On the otherhand, <span class="math inline">\(\mathbf{\theta}\)</span> is responsible for defining the structure of the ODE model and will be denoted as structural parameters. Often, <span class="math inline">\(\mathbf{\theta}\)</span> will be the primary concern given any ODE models. A lesser interest resides in the parameters <span class="math inline">\(\mathbf{\sigma}\)</span> of error distributions given that they influence the fitting criterion for parameter estimation.</p>
+<p>Another objective function <span class="math inline">\(H(\mathbf{\theta},\mathbf{\sigma}|\mathbf{\lambda})\)</span>, referred to as the outter objective function, is optimized with respect only to the structural parameters <span class="math inline">\(\mathbf{\theta}\)</span>. It is usually defined to be the negative log-likelihood function or the sum of squared errors given the distribution of random errors of the data, that is, <span class="math display">\[\begin{equation}
+H(\mathbf{\theta},\mathbf{\sigma}|\mathbf{\lambda}) = -\sum_{i}\text{ln }g(\mathbf{e}_{i}|\mathbf{\sigma}_{i},\mathbf{\theta},\mathbf{\lambda})
+\label{eq:outterobj}
+\end{equation}\]</span> where <span class="math display">\[\begin{equation*}
+\mathbf{e}_{i} = \mathbf{y}_{i} - \hat{\mathbf{c}}^{\prime}_{i}(\mathbf{\theta},\mathbf{\sigma};\mathbf{\lambda})\mathbf{\phi}(\mathbf{t}_{i})
+\end{equation*}\]</span> and <span class="math inline">\(\hat{\mathbf{c}}^{\prime}_{i}(\mathbf{\theta},\mathbf{\sigma};\mathbf{\lambda})\)</span> is the optimizer of <span class="math inline">\(J(\mathbf{c}|\mathbf{\theta},\mathbf{\sigma}_{i},\mathbf{\lambda})\)</span> given current <span class="math inline">\(\mathbf{\theta}\)</span> and <span class="math inline">\(\lambda_{i}\)</span>. <span class="math inline">\(H(\mathbf{\theta},\mathbf{\sigma}|\mathbf{\lambda})\)</span> does not need to have a regularization term given that basis coefficients <span class="math inline">\(\mathbf{c}_{i}\)</span> have already been regularized. The profiling estimation procedure entails two nested optimizations that are controled by the smoothing parameters <span class="math inline">\(\mathbf{\lambda}\)</span>, where the inner optimization depends on the <span class="math inline">\(\mathbf{\lambda}\)</span> through the outter one. As a result, fitting the data is not marginalized from estimating structural prameters. The stream of dependencies defined a parameter cascade which offers great accuracy and efficiency in estimating ODE models. To take full advatanges of the parameter cascade method, <strong><code>pCODE</code></strong> package provides functions that are able to apply the forementioned methodology for estimating ODE models.</p>
+</div>
+<div id="package-functions" class="section level1">
+<h1>Package functions</h1>
+<div id="parameter-estimation-pcode" class="section level2">
+<h2>Parameter estimation: <code>pcode</code></h2>
+<p>The main function to perform parameter cascade method is <code>pcode</code> in the package. This is a generic wrapper for handling different scenarios in terms of objective functions, likelihood or sum of squared errors. First, we can focus on the situation where <span class="math inline">\(e_{ij}\sim\text{N}(0,\sigma^{2}_{i})\)</span>. In fact, both inner and outter objective function are calculated based on a vector of residuals. The first part of inner objective is easily recognized as the residual from fitting the observation with basis funtions under the non-linear least square (NLS) problem. If the second part, the integral, is approximated by the composite Simpson’s rule, then the approximation can be written in a quadratic form and as the inner product between a vector of residual-like quantities to itself. Stringing the mentioned two vectors together, and the concatenation of them from all dimensions will produce a vector of residuals. Hence, the optimization of inner objective function adheres the NLS framework for a given <span class="math inline">\(\mathbf{\theta}\)</span>. As a result, the popular Levenberg-Marquart algorithm is used to obtain an esimate <span class="math inline">\(\hat{\mathbf{c}}^{\prime}_{i}(\mathbf{\theta},\mathbf{\sigma};\mathbf{\lambda})\)</span>, and <code>pcode</code> employes the funtion <code>lsqnonlin</code> from <code>PRACMA</code>. The optimization of outter objective function appears to be exactly a NLS problem. However, the profiled estiamtion strategy appends an extra layer of optimization to each update of outter estimation which characterizes a nested optimization problem. It is applicable to apply Levenberg-Marquart algorithm again to the outter objective, however the computational effort is much greater than that of inner optimization.</p>
+</div>
+<div id="tuning-lambda-tunelambda" class="section level2">
+<h2>Tuning <span class="math inline">\(\lambda\)</span>: <code>tunelambda</code></h2>
+<p>The penalty parameter <span class="math inline">\(\mathbf{\lambda}\)</span> can be manually adjusted for the optimization procedure with function , or it can be determined from a grid search based on a k-fold cross validatoin(CV) criterion. We define the CV score of any set of <span class="math inline">\(\mathbf{\lambda}\)</span> to be <span class="math display">\[
+  \text{CV}(\mathbf{\lambda}) = \sum_{i=1}^{D}\sum_{j=1}^{v} ( y_{i}(t^{\ast}_{j})  - \hat{x}_{i}(t^{\ast}_{j}))^{2}
+\]</span> where <span class="math inline">\(v\)</span> indicates to the total number of points kept from estimation and <span class="math inline">\(t^{\ast}_{j}\)</span>, for <span class="math inline">\(j = 1,..., v\)</span>, corresponds to those points. The <span class="math inline">\(t^{\ast}_{j}\)</span>’s are set to be the same across each dimension <span class="math inline">\(d\)</span> of the ODE model. The points kept away from estimation are defined by the number of folds and the portion of points in each fold. That is, a certain portion of points are kept within each fold of the entire vector of observation points.</p>
+</div>
+<div id="variance-estimation-of-mathbftheta-bootsvar-and-deltavar" class="section level2">
+<h2>Variance estimation of <span class="math inline">\(\mathbf{\theta}\)</span>: <code>bootsvar</code> and <code>deltavar</code></h2>
+<p>All the functions of this packages are derivative-free, hence the variance of structural parameters is numerically approximated. The first option is to use the bootstrap variance estimator. Given the estimation of both parameters <span class="math inline">\(\mathbf{\theta}\)</span> and <span class="math inline">\(\mathbf{c}\)</span>, we are able to solve the ODE directly with estimated initial value <span class="math inline">\(\hat{\mathbf{x}}(t_{0})\)</span>. Hence, bootstrap samples of the ODE model can be simulated based on the estimated distribution of errors <span class="math inline">\(\mathbf{e}_{i}\)</span> for each dimension.</p>
+As an alternative to the boostrap variance estimator, the package  also offers another numeric estimator for the variance of structural parameters.  has developed the approximation to <span class="math inline">\(Var(\mathbf{\hat{\theta}}(\mathbf{y}))\)</span> via the delta-method. The resulting approximation is of the form <span class="math display">\[\begin{equation*}
+Var(\hat{\mathbf{\theta}}(\mathbf{y})) \approx \bigg[ \frac{d\mathbf{\hat{\theta}}}{d\mathbf{y}} \bigg] \mathbf{\Sigma}  \bigg[ \frac{d\mathbf{\hat{\theta}}}{d\mathbf{y}} \bigg]^{\prime}
+\end{equation*}\]</span> where <span class="math inline">\(\frac{d\mathbf{\hat{\theta}}}{d\mathbf{y}}\)</span> is obtained as <span class="math display">\[\begin{equation}
+  \label{eq:dtheta_dy}
+ \frac{d\mathbf{\hat{\theta}}}{d\mathbf{y}} = - \bigg[\frac{\partial^{2}H}{\partial\mathbf{\theta}^2}\bigg\vert_{\mathbf{\hat{\theta}}(\mathbf{y})} \bigg]^{-1} \bigg[  \frac{\partial^{2}H}{\partial\mathbf{\theta}\partial\mathbf{y}}\bigg\vert_{\mathbf{\hat{\theta}}(\mathbf{y})} \bigg]
+\end{equation}\]</span> and <span class="math inline">\(\mathbf{\Sigma}\)</span> is a <span class="math inline">\(N*N\)</span> matrix where the diagonal elements correspond to the variances for each observation. <span class="math inline">\(N\)</span> is the total number of observation summing over all dimensions of <span class="math inline">\(\mathbf{y}\)</span> . Then the estimation of variance relies on the computation of (). The partial derivatives are approximated by the finite difference method, i.e., <span class="math display">\[\begin{equation*}
+\bigg[\frac{\partial^{2}H}{\partial\mathbf{\theta}_{u}^2}\bigg\vert_{\mathbf{\hat{\theta}}(\mathbf{y})} \bigg] \approx \frac{H(\hat{\mathbf{\theta}}_{u+}(\mathbf{y})|\mathbf{\lambda}) - 2H(\hat{\mathbf{\theta}}(\mathbf{y})|\mathbf{\lambda}) + H(\hat{\mathbf{\theta}}_{u-}(\mathbf{y})|\mathbf{\lambda})}{\Delta^{2}}
+\end{equation*}\]</span> where <span class="math inline">\(\hat{\mathbf{\theta}}_{u+}(\mathbf{y})\)</span> and <span class="math inline">\(\hat{\mathbf{\theta}}_{u-}(\mathbf{y})\)</span> indicate the addition and subtraction of stepsize <span class="math inline">\(\Delta\)</span> to the u-th structural parameter estimate <span class="math inline">\(\hat{\mathbf{\theta}}(\mathbf{y})\)</span>. The mixed partial derivatives are approximated as the following <span class="math display">\[\begin{equation*}
+\bigg[\frac{\partial^{2}H}{\partial\mathbf{\theta}_{u}\partial\mathbf{\theta}_{v}}\bigg\vert_{\mathbf{\hat{\theta}}(\mathbf{y})} \bigg] \approx \frac{H(\hat{\mathbf{\theta}}_{u+,v+}(\mathbf{y})) - H(\hat{\mathbf{\theta}}_{u-,v+}(\mathbf{y})) - H(\hat{\mathbf{\theta}}_{u+,v-}(\mathbf{y})) +H(\hat{\mathbf{\theta}}_{u-,v-}(\mathbf{y}))}{4\Delta^{2}}
+\end{equation*}\]</span> Given any fixed arugument <span class="math inline">\(\mathbf{\theta}\)</span> for the outter objective function <span class="math inline">\(H(\mathbf{\theta},\mathbf{\sigma}|\mathbf{\lambda})\)</span>, its evaluation involves the profiled estimation of <span class="math inline">\(\mathbf{c}(\mathbf{\theta},\mathbf{\sigma};|\mathbf{\lambda})\)</span> and returns solely the likelihood or the sum of squared errors. Hence, individual evaluations of <span class="math inline">\(H(\mathbf{\theta},\mathbf{\sigma}|\mathbf{\lambda})\)</span> used in numeric approximation is obtained in the following steps:
+
+<p>Approximation to the second term <span class="math inline">\(\frac{\partial^{2}H}{\partial\mathbf{\theta}\partial\mathbf{y}}\bigg\vert_{\mathbf{\hat{\theta}}(\mathbf{y})}\)</span> utilizes the finite difference method as well. After evaluating <span class="math inline">\(H(\mathbf{\theta},\mathbf{\sigma}|\mathbf{\lambda})\)</span> given <span class="math inline">\(\mathbf{\theta}\)</span>, the mixed partial derivative is calculated by moving the particular observation up or down by some stepsize <span class="math inline">\(\Delta_{y}\)</span>. That is, <span class="math display">\[\begin{equation*}
+\bigg[\frac{\partial^{2}H}{\partial\mathbf{\theta}_{u}\partial y_{v}}\bigg\vert_{\mathbf{\hat{\theta}}(\mathbf{y})} \bigg] \approx \frac{H(\hat{\mathbf{\theta}}_{u+},\mathbf{y}_{v+}) - H(\hat{\mathbf{\theta}}_{u+},\mathbf{y}_{v-}) - H(\hat{\mathbf{\theta}}_{u-},\mathbf{y}_{v+}) +H(\hat{\mathbf{\theta}}_{u-},\mathbf{y}_{v-})}{4\Delta\Delta_{y}} 
+\end{equation*}\]</span> where <span class="math inline">\(\mathbf{y}_{v+}\)</span> and <span class="math inline">\(\mathbf{y}_{v-}\)</span> represent moving up and down v-th observation by stepsize <span class="math inline">\(\Delta_{y}\)</span> in the last step of evaluating <span class="math inline">\(H(\mathbf{\theta},\mathbf{\sigma}|\mathbf{\lambda})\)</span>.</p>
+</div>
+</div>
+<div id="a-simple-example" class="section level1">
+<h1>A simple example</h1>
+<p>A simple illustration uses an one-dimensional ODE model <span class="math display">\[
+\dot{X} = \theta X (1-\frac{X}{10})
+\]</span> The following code defines the forementioned model that will be provided for <code>pcode</code> for estimating parameters and <code>ode</code> for obtaining numeric solution:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" title="1"><span class="co">#load dependencies</span></a>
+<a class="sourceLine" id="cb2-2" title="2"><span class="kw">library</span>(pCODE)</a>
+<a class="sourceLine" id="cb2-3" title="3"><span class="kw">library</span>(deSolve)</a>
+<a class="sourceLine" id="cb2-4" title="4"><span class="kw">library</span>(fda)</a>
+<a class="sourceLine" id="cb2-5" title="5"><span class="kw">library</span>(MASS)</a>
+<a class="sourceLine" id="cb2-6" title="6"><span class="kw">library</span>(pracma)</a>
+<a class="sourceLine" id="cb2-7" title="7"><span class="kw">library</span>(Hmisc)</a>
+<a class="sourceLine" id="cb2-8" title="8"><span class="co">#set seed for reproducibility</span></a>
+<a class="sourceLine" id="cb2-9" title="9"><span class="kw">set.seed</span>(<span class="dv">123</span>)</a>
+<a class="sourceLine" id="cb2-10" title="10">ode.model &lt;-<span class="st"> </span><span class="cf">function</span>(t,state,parameters){</a>
+<a class="sourceLine" id="cb2-11" title="11">            <span class="kw">with</span>(<span class="kw">as.list</span>(<span class="kw">c</span>(state,parameters)),{</a>
+<a class="sourceLine" id="cb2-12" title="12">                 dX &lt;-<span class="st"> </span>theta<span class="op">*</span>X<span class="op">*</span>(<span class="dv">1</span><span class="op">-</span>X<span class="op">/</span><span class="dv">10</span>)</a>
+<a class="sourceLine" id="cb2-13" title="13">                <span class="kw">return</span>(<span class="kw">list</span>(dX))})}</a></code></pre></div>
+<p>Let <span class="math inline">\(\theta = 0.1\)</span> and <span class="math inline">\(X(0) = 0.1\)</span></p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1"><span class="co">#define model parameters</span></a>
+<a class="sourceLine" id="cb3-2" title="2">model.par   &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dt">theta =</span> <span class="kw">c</span>(<span class="fl">0.1</span>))</a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="co">#define state initial value</span></a>
+<a class="sourceLine" id="cb3-4" title="4">state       &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dt">X     =</span> <span class="fl">0.1</span>)</a></code></pre></div>
+<p>Given an observation period of <span class="math inline">\([0,100]\)</span>, random noise errors are added to the ODE solution with a Normal distribution <span class="math inline">\(\text{N}(0,0.5^{2})\)</span>. Observations are generated as follows:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1">times  &lt;-<span class="st"> </span><span class="kw">seq</span>(<span class="dv">0</span>,<span class="dv">100</span>,<span class="dt">length.out=</span><span class="dv">101</span>)</a>
+<a class="sourceLine" id="cb4-2" title="2">mod    &lt;-<span class="st"> </span><span class="kw">ode</span>(<span class="dt">y=</span>state,<span class="dt">times=</span>times,<span class="dt">func=</span>ode.model,<span class="dt">parms =</span> model.par)</a>
+<a class="sourceLine" id="cb4-3" title="3">nobs   &lt;-<span class="st"> </span><span class="kw">length</span>(times)</a>
+<a class="sourceLine" id="cb4-4" title="4">scale  &lt;-<span class="st"> </span><span class="fl">0.5</span></a>
+<a class="sourceLine" id="cb4-5" title="5">noise  &lt;-<span class="st"> </span>scale <span class="op">*</span><span class="st"> </span><span class="kw">rnorm</span>(<span class="dt">n =</span> nobs, <span class="dt">mean =</span> <span class="dv">0</span> , <span class="dt">sd =</span> <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb4-6" title="6">observ &lt;-<span class="st"> </span>mod[,<span class="dv">2</span>] <span class="op">+</span><span class="st"> </span>noise</a></code></pre></div>
+<p>Subsequently, we can visualize the observations along the true solution of this simple ODE model as</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1"><span class="co">#plot simulated data against generating model</span></a>
+<a class="sourceLine" id="cb5-2" title="2"><span class="kw">plot</span>(mod,<span class="dt">ylab=</span><span class="kw">names</span>(state))      <span class="co">#curve</span></a>
+<a class="sourceLine" id="cb5-3" title="3"><span class="kw">points</span>(times, observ,<span class="dt">pch=</span><span class="st">&#39;*&#39;</span>,<span class="dt">col=</span><span class="st">&#39;blue&#39;</span>)    <span class="co">#observation</span></a></code></pre></div>
+<p><img src="data:image/png;base64,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" style="display: block; margin: auto;" /> First, a basis object needs to be defined by <code>create.bspline.basis</code> from <code>fda</code> package for smoothing observations. A B-spline basis is created given 21 konts including both interior and boundary knots acorss observation interval <span class="math inline">\((0,100)\)</span>. The order of basis functions is 4, so there is a total of 23 basis functions.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1"><span class="co">#Generate basis object for interpolation and as argument of pcode</span></a>
+<a class="sourceLine" id="cb6-2" title="2"><span class="co">#21 konts equally spaced within [0,100]</span></a>
+<a class="sourceLine" id="cb6-3" title="3">knots &lt;-<span class="st"> </span><span class="kw">seq</span>(<span class="dv">0</span>,<span class="dv">100</span>,<span class="dt">length.out=</span><span class="dv">21</span>)</a>
+<a class="sourceLine" id="cb6-4" title="4"><span class="co">#order of basis functions</span></a>
+<a class="sourceLine" id="cb6-5" title="5">norder &lt;-<span class="st"> </span><span class="dv">4</span></a>
+<a class="sourceLine" id="cb6-6" title="6"><span class="co">#number of basis funtions</span></a>
+<a class="sourceLine" id="cb6-7" title="7">nbasis &lt;-<span class="st"> </span><span class="kw">length</span>(knots) <span class="op">+</span><span class="st"> </span>norder <span class="op">-</span><span class="st"> </span><span class="dv">2</span></a>
+<a class="sourceLine" id="cb6-8" title="8"><span class="co">#creating Bspline basis</span></a>
+<a class="sourceLine" id="cb6-9" title="9">basis  &lt;-<span class="st"> </span><span class="kw">create.bspline.basis</span>(<span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">100</span>),nbasis,norder,<span class="dt">breaks =</span> knots)</a></code></pre></div>
+<p>To perform parameter cascade method for estimating both structural and nuisance parameters, one can use <code>pcode</code> in the following way</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1"><span class="co">#parameter estimation</span></a>
+<a class="sourceLine" id="cb7-2" title="2">pcode.result &lt;-<span class="st"> </span><span class="kw">pcode</span>(<span class="dt">data =</span> observ, <span class="dt">time =</span> times, <span class="dt">ode.model =</span> ode.model,</a>
+<a class="sourceLine" id="cb7-3" title="3">                      <span class="dt">par.initial =</span> <span class="fl">0.3</span>, <span class="dt">par.names =</span> <span class="st">&#39;theta&#39;</span>,<span class="dt">state.names =</span> <span class="st">&#39;X&#39;</span>,</a>
+<a class="sourceLine" id="cb7-4" title="4">                      <span class="dt">basis.list =</span> basis, <span class="dt">lambda =</span> <span class="fl">1e2</span>)</a></code></pre></div>
+<p>The structural parameter and nuisance parameter estiamtes can be called by</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" title="1">pcode.result<span class="op">$</span>structural.par</a>
+<a class="sourceLine" id="cb8-2" title="2"><span class="co">#&gt;      theta </span></a>
+<a class="sourceLine" id="cb8-3" title="3"><span class="co">#&gt; 0.09995229</span></a>
+<a class="sourceLine" id="cb8-4" title="4">pcode.result<span class="op">$</span>nuisance.par</a>
+<a class="sourceLine" id="cb8-5" title="5"><span class="co">#&gt;  [1]  0.1232160  0.1550332  0.1903906  0.2729993  0.4284428  0.6134020</span></a>
+<a class="sourceLine" id="cb8-6" title="6"><span class="co">#&gt;  [7]  1.0222183  1.6891098  2.5351231  3.5543293  4.8116926  6.0699739</span></a>
+<a class="sourceLine" id="cb8-7" title="7"><span class="co">#&gt; [13]  7.2145361  8.0734588  8.7456720  9.2110485  9.4866269  9.7101657</span></a>
+<a class="sourceLine" id="cb8-8" title="8"><span class="co">#&gt; [19]  9.8736650  9.9650449 10.0098433  9.9950749  9.9846698</span></a></code></pre></div>
+<p>The true variance for data generating parameter <span class="math inline">\(\theta\)</span> is <span class="math inline">\(1.003\mathrm{e}{-5}\)</span>, and we can then compare the performance <code>deltavar</code> for estimating <span class="math inline">\(\text{var}(\theta)\)</span>.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">deltavar</span>(<span class="dt">data =</span> observ, <span class="dt">time =</span> times, <span class="dt">ode.model =</span> ode.model,</a>
+<a class="sourceLine" id="cb9-2" title="2">                        <span class="dt">par.initial =</span> <span class="fl">0.3</span>, <span class="dt">par.names =</span> <span class="st">&#39;theta&#39;</span>,<span class="dt">state.names =</span> <span class="st">&#39;X&#39;</span>,</a>
+<a class="sourceLine" id="cb9-3" title="3">                        <span class="dt">basis.list =</span> basis, <span class="dt">lambda =</span> <span class="fl">1e2</span>,</a>
+<a class="sourceLine" id="cb9-4" title="4">                        <span class="dt">stepsize =</span> <span class="fl">1e-5</span>,<span class="dt">y_stepsize =</span> <span class="fl">1e-5</span>)</a>
+<a class="sourceLine" id="cb9-5" title="5"><span class="co">#&gt; [1] &quot;#######################################&quot;</span></a>
+<a class="sourceLine" id="cb9-6" title="6"><span class="co">#&gt; [1] &quot;Starting optimization&quot;</span></a>
+<a class="sourceLine" id="cb9-7" title="7"><span class="co">#&gt; [1] &quot;#######################################&quot;</span></a>
+<a class="sourceLine" id="cb9-8" title="8"><span class="co">#&gt; [1] &quot;Current iteration:  1&quot;</span></a>
+<a class="sourceLine" id="cb9-9" title="9"><span class="co">#&gt; [1] &quot;Current function value:  124.675163&quot;</span></a>
+<a class="sourceLine" id="cb9-10" title="10"><span class="co">#&gt; [1] &quot;Current iteration:  2&quot;</span></a>
+<a class="sourceLine" id="cb9-11" title="11"><span class="co">#&gt; [1] &quot;Current function value:  33.572556&quot;</span></a>
+<a class="sourceLine" id="cb9-12" title="12"><span class="co">#&gt; [1] &quot;Current iteration:  3&quot;</span></a>
+<a class="sourceLine" id="cb9-13" title="13"><span class="co">#&gt; [1] &quot;Current function value:  31.913573&quot;</span></a>
+<a class="sourceLine" id="cb9-14" title="14"><span class="co">#&gt; [1] &quot;Current iteration:  4&quot;</span></a>
+<a class="sourceLine" id="cb9-15" title="15"><span class="co">#&gt; [1] &quot;Current function value:  20.006666&quot;</span></a>
+<a class="sourceLine" id="cb9-16" title="16"><span class="co">#&gt; [1] &quot;Current iteration:  5&quot;</span></a>
+<a class="sourceLine" id="cb9-17" title="17"><span class="co">#&gt; [1] &quot;Current function value:  20.003467&quot;</span></a>
+<a class="sourceLine" id="cb9-18" title="18"><span class="co">#&gt; [1] &quot;Current iteration:  6&quot;</span></a>
+<a class="sourceLine" id="cb9-19" title="19"><span class="co">#&gt; [1] &quot;Current function value:  20.003467&quot;</span></a>
+<a class="sourceLine" id="cb9-20" title="20"><span class="co">#&gt; [1] &quot;Current iteration:  7&quot;</span></a>
+<a class="sourceLine" id="cb9-21" title="21"><span class="co">#&gt; [1] &quot;Current function value:  20.003467&quot;</span></a>
+<a class="sourceLine" id="cb9-22" title="22"><span class="co">#&gt; [1] 9.923318e-06</span></a></code></pre></div>
+<p>The variance estimator give sexcellent estimates of the true variance of structural parameter. <code>tunelambda</code> returns a matrix of cross-validation scores for each replication given a certain <span class="math inline">\(\lambda\)</span>. Based on the replicates, score averages and standard deviations can be calculated for comparison betweens candidates of <span class="math inline">\(\lambda\)</span>:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" title="1"><span class="co">#Tune lambda based on k-fold cross-validation</span></a>
+<a class="sourceLine" id="cb10-2" title="2">cv.result &lt;-<span class="st"> </span><span class="kw">tunelambda</span>(<span class="dt">data =</span> observ, <span class="dt">time =</span> times, <span class="dt">ode.model =</span> ode.model,</a>
+<a class="sourceLine" id="cb10-3" title="3">                       <span class="dt">par.initial =</span> <span class="fl">0.3</span>, <span class="dt">par.names =</span> <span class="st">&#39;theta&#39;</span>,<span class="dt">state.names =</span> <span class="st">&#39;X&#39;</span>,</a>
+<a class="sourceLine" id="cb10-4" title="4">                       <span class="dt">basis.list =</span> basis, <span class="dt">lambda_grid =</span> <span class="dv">10</span><span class="op">^</span>(<span class="op">-</span><span class="dv">3</span><span class="op">:</span><span class="dv">10</span>),<span class="dt">cv_portion =</span> <span class="fl">.01</span>,</a>
+<a class="sourceLine" id="cb10-5" title="5">                       <span class="dt">rep =</span> <span class="dv">20</span>, <span class="dt">kfolds =</span> <span class="dv">5</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1">cv.means &lt;-<span class="st"> </span><span class="kw">apply</span>(cv.result<span class="op">$</span>cv.score, <span class="dv">1</span>, mean)</a>
+<a class="sourceLine" id="cb11-2" title="2">cv.sd    &lt;-<span class="st"> </span><span class="kw">apply</span>(cv.result<span class="op">$</span>cv.score, <span class="dv">1</span>, sd)<span class="op">/</span><span class="kw">sqrt</span>(<span class="dv">20</span>)</a>
+<a class="sourceLine" id="cb11-3" title="3"><span class="kw">plot</span>(<span class="op">-</span><span class="dv">2</span><span class="op">:</span><span class="dv">10</span>, cv.means[<span class="dv">2</span><span class="op">:</span><span class="dv">14</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">lwd =</span> <span class="dv">2</span>, <span class="dt">col =</span> <span class="kw">gray</span>(<span class="fl">0.4</span>),<span class="dt">ylim=</span> <span class="kw">c</span>(<span class="op">-</span><span class="dv">0</span>,<span class="dv">50</span>),<span class="dt">ylab=</span><span class="st">&#39;&#39;</span>,<span class="dt">xlab=</span><span class="st">&#39;&#39;</span>)</a>
+<a class="sourceLine" id="cb11-4" title="4"><span class="kw">errbar</span>(<span class="op">-</span><span class="dv">2</span><span class="op">:</span><span class="dv">10</span>, cv.means[<span class="dv">2</span><span class="op">:</span><span class="dv">14</span>], cv.means[<span class="dv">2</span><span class="op">:</span><span class="dv">14</span>] <span class="op">+</span><span class="st"> </span>cv.sd[<span class="dv">2</span><span class="op">:</span><span class="dv">14</span>], cv.means[<span class="dv">2</span><span class="op">:</span><span class="dv">14</span>] <span class="op">-</span><span class="st"> </span>cv.sd[<span class="dv">2</span><span class="op">:</span><span class="dv">14</span>], <span class="dt">add =</span> <span class="ot">TRUE</span>, <span class="dt">col =</span> <span class="st">&quot;steelblue2&quot;</span>, <span class="dt">pch =</span> <span class="dv">19</span>,</a>
+<a class="sourceLine" id="cb11-5" title="5">       <span class="dt">lwd =</span> <span class="fl">0.5</span>)</a>
+<a class="sourceLine" id="cb11-6" title="6"></a>
+<a class="sourceLine" id="cb11-7" title="7"><span class="kw">plot</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>, cv.means[<span class="dv">5</span><span class="op">:</span><span class="dv">14</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">lwd =</span> <span class="dv">2</span>, <span class="dt">col =</span> <span class="kw">gray</span>(<span class="fl">0.4</span>),<span class="dt">ylim=</span> <span class="kw">c</span>(<span class="op">-</span><span class="dv">0</span>,<span class="dv">5</span>),<span class="dt">ylab=</span><span class="st">&#39;&#39;</span>,<span class="dt">xlab=</span><span class="st">&#39;&#39;</span>)</a>
+<a class="sourceLine" id="cb11-8" title="8"><span class="kw">errbar</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>, cv.means[<span class="dv">5</span><span class="op">:</span><span class="dv">14</span>], cv.means[<span class="dv">5</span><span class="op">:</span><span class="dv">14</span>] <span class="op">+</span><span class="st"> </span>cv.sd[<span class="dv">5</span><span class="op">:</span><span class="dv">14</span>], cv.means[<span class="dv">5</span><span class="op">:</span><span class="dv">14</span>] <span class="op">-</span><span class="st"> </span>cv.sd[<span class="dv">5</span><span class="op">:</span><span class="dv">14</span>], <span class="dt">add =</span> <span class="ot">TRUE</span>, <span class="dt">col =</span> <span class="st">&quot;steelblue2&quot;</span>, <span class="dt">pch =</span> <span class="dv">19</span>,</a>
+<a class="sourceLine" id="cb11-9" title="9">       <span class="dt">lwd =</span> <span class="fl">0.5</span>)</a></code></pre></div>
+<p><img src="data:image/png;base64,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" style="display: block; margin: auto;" /><img src="data:image/png;base64,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k+TNc8BTel6of/f/2GIO/ypu05klycvvaVNQDfTn6/yMUufVl7XfFc1kuPNox53nU0zPCzVzLPS4K+4jm+XDTixUNdDDe74Y09ab4Vs47lwDLW+36vkUf77y34a9269EVn6aQflEJw6rGmhp6q/dNOnrfzwDPfzl+eRyzoFmyUdxJ+5ZGxvtQPeeW9BzMK7HoNkf/+ycD7O9d/HlreLL38QswkBbb+RsId8RuQaa5vu/cqPmZsbZyrTx8irL/eDEvaFyoJnrOVJ+233fQF9mbFimyfdIh3fH3/qoA3Xdfpb7Id9AizTLAzQf/meeMe/iU+fDs8ttAf1yKdeY56nSrE3ZtBHjPUlKXS8oX7huQcuPnfLcxZeleI6YRXuZyfVI6cb3laT8qLfy2VMO1jkGjfJC/WWP63rK6f5SZ+b+au7eecTL1jqN76VOoECgkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkPZ/Go/iSIf0baYAAAAASUVORK5CYII=" style="display: block; margin: auto;" /> The search grid for <span class="math inline">\(\lambda\)</span> is <span class="math inline">\(10^{-2:10}\)</span> in this case. The CV scores, as illustrated in , indicate that any <span class="math inline">\(\lambda\)</span> less than <span class="math inline">\(1\)</span> are not optimal for the model Instead, we can focus on a subset of candidates for which the CV scores are considered to be reasonably acceptable. Based on the cross-validation plot, <span class="math inline">\(\lambda = 10\)</span> seems to be the most optimal.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

@@ -1,3 +1,7 @@
+## pCODE 0.9.4
+* Add verval options
+* Add automated tests for package functions
+
 ## pCODE 0.9.3
 * Fixed likelihood problem
 * Update license information
